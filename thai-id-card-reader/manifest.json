@@ -1,0 +1,9 @@
+{
+    "name": "co.cortexcloud.thai_id_card_reader",
+    "description": "Read data from thai id card",
+    "path": "C:\\Users\\H LAB\\source\\repos\\thai-id-card-reader\\thai-id-card-reader\\bin\\Debug\\thai-id-card-reader.exe",
+    "type": "stdio",
+    "allowed_origins": [
+        "chrome-extension://jndbnaiglicbpknjdgcfkipgeocfhinp/"
+    ]
+}
