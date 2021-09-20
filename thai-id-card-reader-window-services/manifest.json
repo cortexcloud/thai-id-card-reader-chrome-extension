@@ -1,10 +1,10 @@
 {
   "name": "co.cortexcloud.thai_id_card_reader_window_services",
   "description": "Read data from thai id card",
-  "path": "C:\\Users\\LEVEL51PC\\source\\repos\\thai-id-card-reader-chrome-extension\\thai-id-card-reader-window-services\\bin\\Debug\\thai-id-card-reader-window-services.exe",
+  "path": "E:\\thai-id-card-reader-chrome-extension\\thai-id-card-reader-window-services\\bin\\Debug\\thai-id-card-reader-window-services.exe",
   "type": "stdio",
   "allowed_origins": [
-    "chrome-extension://mejkfoiffmpgbggkaekocdecomhpfbji/"
+    "chrome-extension://gmigpcpfjbodonjpnoljbihdpapdaild/"
   ]
 }
 

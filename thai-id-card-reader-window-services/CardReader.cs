@@ -151,6 +151,13 @@ namespace thai_id_card_reader_window_services
 
         public void MonitorStart()
         {
+            //SendToWeb(new ResponseModel()
+            //{
+            //    cardStatus = "START",
+            //    deviceStatus = "START",
+            //    data = null
+            //});
+
             _idcard.MonitorStart(_cardReaderName);
         }
 
@@ -161,12 +168,11 @@ namespace thai_id_card_reader_window_services
 
         private void SendToWeb(ResponseModel resp)
         {
-            //string json = @"{
-            //    name: 'cortex cloud'
-            //    status : 
-            //}";
+            string json = @"{
+                name: 'cortex cloud'
+            }";
 
-            JObject o = JObject.Parse(JsonConvert.SerializeObject(resp));
+            JObject o = JObject.Parse(json);
 
             SendMessage(o);
         }

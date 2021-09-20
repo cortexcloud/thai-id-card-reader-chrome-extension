@@ -1,7 +1,7 @@
 /*
 On startup, connect to the "co.cortexcloud.thai_id_card_reader" app.
 */
-var port = chrome.runtime.connectNative("co.cortexcloud.thai_id_card_reader_console_app");
+var port = chrome.runtime.connectNative("co.cortexcloud.thai_id_card_reader_window_app");
 
 /*
 Listen for messages from the app.

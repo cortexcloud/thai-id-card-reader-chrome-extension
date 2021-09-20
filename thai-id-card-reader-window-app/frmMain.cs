@@ -1,24 +1,28 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Configuration;
+using System.Data;
+using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using ThaiNationalIDCard;
-using Newtonsoft.Json.Linq;
-using System.IO;
-using thai_id_card_reader_console_app.Models;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using thai_id_card_reader_window_app.Models;
+using ThaiNationalIDCard;
 
-namespace thai_id_card_reader_console_app
+namespace thai_id_card_reader_window_app
 {
-    public class CardReader
+    public partial class frmMain : Form
     {
-         private ThaiIDCard _idcard;
-        private Model _resp;
+        private readonly ThaiIDCard _idcard;
+        private ResponseModel _resp;
         string _cardReaderName = ConfigurationManager.AppSettings["DEFAULT_CARD_READER_NAME"];
-        string _cardStatus = "REMOVED"; //default;
+        string _cardStatus;
         string _deviceStatus;
 
         enum CardStatus
@@ -39,26 +43,40 @@ namespace thai_id_card_reader_console_app
             ERROR
         }
 
-        public CardReader()
+
+        public frmMain()
         {
+            InitializeComponent();
+
             _idcard = new ThaiIDCard();
-            _resp = new Model();
+           
+        }
+
+        private void frmMain_Load(object sender, EventArgs e)
+        {
+            Visible = false; // Hide form window.
+            ShowInTaskbar = false; // Remove from taskbar.
+            Opacity = 0;
 
             if (isAvailableCardReader())
             {
                 _idcard.eventCardInserted += Idcard_eventCardInserted;
                 _idcard.eventCardRemoved += Idcard_eventCardRemoved;
+                _idcard.MonitorStart(_cardReaderName);
             }
+            
         }
 
         private void Idcard_eventCardRemoved()
         {
             eventCardStatus(CardStatus.REMOVED);
+
+            updateResult("");
+
         }
 
         private void Idcard_eventCardInserted(Personal personal)
         {
-
             eventCardStatus(CardStatus.INSERTED);
 
             Thread th = new Thread(new ThreadStart(() =>
@@ -66,6 +84,11 @@ namespace thai_id_card_reader_console_app
                 try
                 {
                     personal = _idcard.readAll();
+
+                    string jsonResponse = JsonConvert.SerializeObject(personal);
+
+                    updateResult(jsonResponse);
+
                     eventCardStatus(CardStatus.SUCCESS, personal);
                 }
                 catch (Exception)
@@ -78,7 +101,6 @@ namespace thai_id_card_reader_console_app
             th.Start();
             eventCardStatus(CardStatus.LOADING);
         }
-
 
         public bool isAvailableCardReader()
         {
@@ -114,30 +136,55 @@ namespace thai_id_card_reader_console_app
             {
                 cardReaderList = new string[] { };
                 _deviceStatus = nameof(DeviceStatus.ERROR);
+
             }
 
             return result;
         }
 
-        public void MonitorStart()
+
+        public void updateResult(string result)
         {
-            _idcard.MonitorStart(_cardReaderName);
+            if (txtResult.InvokeRequired)
+            {
+                Action safeWrite = delegate { updateResult(result); };
+                txtResult.Invoke(safeWrite);
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(result) || result.Trim().Length <= 0)
+                {
+                    txtResult.Text = string.Empty;
+                }
+                else
+                {
+                    txtResult.AppendText(result + Environment.NewLine);
+                }
+            }
         }
 
-        public void MonitorStop()
+        private void eventCardStatus(CardStatus status, Personal personal = null)
         {
-            _idcard.MonitorStop(_cardReaderName);
+            var value = (CardStatus)(int)status;
+            string jsonResponse = JsonConvert.SerializeObject(personal);
 
-            eventCardStatus(CardStatus.EMPTY, null);
+
+            SendToWeb(new ResponseModel()
+            {
+                cardStatus = value.ToString(),
+                deviceStatus = _deviceStatus,
+                data = personal
+            });
         }
 
-        private void SendToWeb(Model resp)
+        private void SendToWeb(ResponseModel resp)
         {
-            JObject o = JObject.Parse(JsonConvert.SerializeObject(resp));
+            string jsonResponse = JsonConvert.SerializeObject(resp);
+
+            JObject o = JObject.Parse(jsonResponse);
 
             SendMessage(o);
         }
-
         public void SendMessage(JObject data)
         {
             byte[] bytes = System.Text.Encoding.UTF8.GetBytes(data.ToString(Formatting.None));
@@ -150,22 +197,10 @@ namespace thai_id_card_reader_console_app
             stdout.Flush();
         }
 
-        private void eventCardStatus(CardStatus status, Personal personal = null)
+        private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
         {
-            var value = (CardStatus)(int)status;
-            _cardStatus = value.ToString();
-
-            SendToWeb(new Model()
-            {
-                cardStatus = value.ToString(),
-                deviceStatus = _deviceStatus,
-                data = personal
-            });
-        }
-
-        public string getCurrentStatus()
-        {
-            return _cardStatus;
+            _idcard.MonitorStop(_cardReaderName);
+            //_idcard.Close();
         }
     }
 }

@@ -12,4 +12,9 @@ namespace thai_id_card_reader_console_app.Models
         public string cardStatus;
         public object data;
     }
+
+    public class MessageModel
+    {
+        public string text;
+    }
 }

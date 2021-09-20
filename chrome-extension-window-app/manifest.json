@@ -1,5 +1,5 @@
 {
-    "name": "Thai ID Card Reader Console App",
+    "name": "Thai ID Card Reader",
     "description": "Listen for event from Thai id card reader application",
     "manifest_version": 2,
     "version": "1.0",
