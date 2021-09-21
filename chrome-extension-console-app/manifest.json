@@ -3,12 +3,14 @@
     "description": "Listen for event from Thai id card reader application",
     "manifest_version": 2,
     "version": "1.0",
-    "icons": {
-        "128": "icons/logo.png"
+    "icons": { 
+        "128": "./icons/logo.png" 
     },
     "permissions": [
 		"tabs",
-        "nativeMessaging"
+        "nativeMessaging",
+        "storage",
+        "file:///C:/Users/LEVEL51PC/source/repos/thai-id-card-reader-chrome-extension/chrome-extension-console-app/test.html"
     ],
     "browser_action": {
         "default_popup": "popup.html"
@@ -21,7 +23,7 @@
     "content_scripts": [
         {
             "matches": ["http://*/*"],
-            "js": ["content.js"]
+            "js": ["foreground.js"]
         }
     ]
 }
