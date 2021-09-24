@@ -231,6 +231,13 @@ namespace thai_id_card_reader_console_app
 
         private static void validateLoadingCardTimeout()
         {
+            _countingTimeout = 0;
+
+            if(_thread != null)
+            {
+                _thread.Abort();
+            }
+
             _thread = new Thread(loadingTimeout);
             _thread.Start();
         }
@@ -243,8 +250,7 @@ namespace thai_id_card_reader_console_app
                 Thread.Sleep(1000);
                 _countingTimeout++;
 
-
-                if (_currentCardStatus == CardStatus.LOADING && _countingTimeout > _timeout)
+                if ((_currentCardStatus == CardStatus.LOADING) && _countingTimeout > _timeout)
                 {
                     if (Thread.CurrentThread.ThreadState == System.Threading.ThreadState.Running)
                     {
@@ -330,7 +336,6 @@ namespace thai_id_card_reader_console_app
 
             return result;
         }
-
 
         private static bool isCardInserted()
         {
