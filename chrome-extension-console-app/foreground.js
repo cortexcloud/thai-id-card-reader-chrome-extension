@@ -1,22 +1,48 @@
 console.log('foreground script is started.')
-//var txtResult = document.getElementById('#result');
+
+var port = chrome.runtime.connect({name: "cortex"});
+
+
+function onNotification(msg){
+    port.postMessage({ action : 'notification', value : msg });
+}
+
+function onConnect(){
+    port.postMessage({ action : 'connect' });
+}
+
+
+function onRetry(){
+    port.postMessage({ action : 'retry' });
+}
+
+function onCancel(){
+    port.postMessage({ action : 'cancel' });
+}
+
+// //listener message from background
+// port.onMessage.addListener(function(message) {
+//     console.log(message.resp)
+// });
+
 chrome.runtime.onMessage.addListener(
-  function(request, sender, sendResponse) {
-      
-    console.log(request.message)
-    document.getElementById("result").value = JSON.stringify(request.message); 
+    function(request, sender, sendResponse) {
+        
+        //for test
+        //document.getElementById("result").value = JSON.stringify(request.data); 
+  
+        const event = new CustomEvent('message', {detail : request.data});
+        window.dispatchEvent(event);
 
+        // var btnRetry = document.getElementById('btnRetry');
+        // btnRetry.addEventListener('click', () => {
+        //     onConnect();
+        // });
 
-    //txtResult.value(JSON.stringify(request.message));
-    // console.log(sender.tab ?
-    //             "from a content script:" + sender.tab.url :
-    //             "from the extension");
-    // if (request.greeting == "hello")
-    // {
-    //   sendResponse({farewell: "goodbye"});
-    // }
-    // else {
-    //     console.log(request.message)
-    // }
-  }
+    }
 );
+
+// var btnConnect = document.getElementById('btnConnect');
+// btnConnect.addEventListener('click', () => {
+//     onConnect();
+// });

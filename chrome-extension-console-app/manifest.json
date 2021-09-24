@@ -10,6 +10,7 @@
 		"tabs",
         "nativeMessaging",
         "storage",
+        "http://localhost:4200/*/*",
         "file:///C:/Users/LEVEL51PC/source/repos/thai-id-card-reader-chrome-extension/chrome-extension-console-app/test.html"
     ],
     "browser_action": {
