@@ -51,61 +51,64 @@ namespace thai_id_card_reader_console_app
 
         public static void Main(string[] args)
         {
-            AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
-
-            try
+            Process[] processes = Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName);
+            if (processes.Length == 1)
             {
-                if (isAvailableCardReader())
-                {
-                    _idcard.eventCardInserted += Idcard_eventCardInserted;
-                    _idcard.eventCardRemoved += Idcard_eventCardRemoved;
-                    _idcard.MonitorStart(_cardReaderName);
+                AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
 
-                    //check card inserted before app start then warning user to remove card first
-                    if (isCardInserted())
+                try
+                {
+                    if (isAvailableCardReader())
                     {
-                        var resp = new ResponseModel()
+                        _idcard.eventCardInserted += Idcard_eventCardInserted;
+                        _idcard.eventCardRemoved += Idcard_eventCardRemoved;
+                        _idcard.MonitorStart(_cardReaderName);
+
+                        //check card inserted before app start then warning user to remove card first
+                        if (isCardInserted())
                         {
-                            cardStatus = nameof(CardStatus.FAIL),
-                            deviceStatus = nameof(DeviceStatus.AVAILABLE)
-                        };
+                            var resp = new ResponseModel()
+                            {
+                                cardStatus = nameof(CardStatus.FAIL),
+                                deviceStatus = nameof(DeviceStatus.AVAILABLE)
+                            };
 
-                        SendToWeb(resp);
+                            SendToWeb(resp);
+                        }
+                        //else
+                        //{
+                        //    //not yet card insert then waiting user action
+                        //    waitingInsertCardTimeout();
+                        //}
+
+
+
                     }
-                    //else
-                    //{
-                    //    //not yet card insert then waiting user action
-                    //    waitingInsertCardTimeout();
-                    //}
+                }
+                catch (Exception ex)
+                {
+                    var resp = new ResponseModel()
+                    {
+                        cardStatus = nameof(CardStatus.FAIL),
+                        deviceStatus = nameof(DeviceStatus.ERROR),
+                        data = ex.Message
+                    };
+
+                    SendToWeb(resp);
+                }
 
 
-
+                //long live listening
+                while ((data = Read()) != null)
+                {
+                    var processed = ProcessMessage(data);
+                    SendMessage(data);
+                    if (processed == "exit")
+                    {
+                        return;
+                    }
                 }
             }
-            catch (Exception ex)
-            {
-                var resp = new ResponseModel()
-                {
-                    cardStatus = nameof(CardStatus.FAIL),
-                    deviceStatus = nameof(DeviceStatus.ERROR),
-                    data = ex.Message
-                };
-
-                SendToWeb(resp);
-            }
-
-
-            //long live listening
-            while ((data = Read()) != null)
-            {
-                var processed = ProcessMessage(data);
-                SendMessage(data);
-                if (processed == "exit")
-                {
-                    return;
-                }
-            }
-
         }
 
         //console self listening
@@ -233,7 +236,7 @@ namespace thai_id_card_reader_console_app
         {
             _countingTimeout = 0;
 
-            if(_thread != null)
+            if (_thread != null)
             {
                 _thread.Abort();
             }
@@ -282,7 +285,11 @@ namespace thai_id_card_reader_console_app
 
             try
             {
-                personal = _idcard.readAll();
+                if (personal == null)
+                {
+                    personal = _idcard.readAll();
+                }
+
                 if (_currentCardStatus != CardStatus.TIMEOUT)
                 {
                     eventCardStatus(CardStatus.SUCCESS, personal);

@@ -54,9 +54,9 @@ namespace thai_id_card_reader_window_app
 
         private void frmMain_Load(object sender, EventArgs e)
         {
-            Visible = false; // Hide form window.
-            ShowInTaskbar = false; // Remove from taskbar.
-            Opacity = 0;
+            //Visible = false; // Hide form window.
+            //ShowInTaskbar = false; // Remove from taskbar.
+            //Opacity = 0;
 
             if (isAvailableCardReader())
             {
@@ -83,7 +83,10 @@ namespace thai_id_card_reader_window_app
             {
                 try
                 {
-                    personal = _idcard.readAll();
+                    if (personal == null)
+                    {
+                        personal = _idcard.readAll();
+                    }
 
                     string jsonResponse = JsonConvert.SerializeObject(personal);
 
