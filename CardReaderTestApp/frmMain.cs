@@ -88,19 +88,30 @@ namespace thai_id_card_reader_window_app
 
         private void btnReadData_Click(object sender, EventArgs e)
         {
-            if (lstCardReader.SelectedIndex > -1)
+            if (lstCardReader.Items.Count > 0)
             {
-                updateResult(string.Empty);
+                if (lstCardReader.SelectedIndex > -1)
+                {
+                    updateResult(string.Empty);
 
-                _cardReaderName = lstCardReader.SelectedItem.ToString();
+                    _cardReaderName = lstCardReader.SelectedItem.ToString();
 
-                _idcard.Open(_cardReaderName);
+                    _idcard.Open(_cardReaderName);
 
-                var personal = _idcard.readAll(false, _cardReaderName);
+                    var personal = _idcard.readAll(false, _cardReaderName);
 
-                string jsonResponse = JsonConvert.SerializeObject(personal);
+                    string jsonResponse = JsonConvert.SerializeObject(personal);
 
-                updateResult(jsonResponse);
+                    updateResult(jsonResponse);
+                }
+                else
+                {
+                    MessageBox.Show("Please select one card reader", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            else
+            {
+                MessageBox.Show("No card reader.", "Error",MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
