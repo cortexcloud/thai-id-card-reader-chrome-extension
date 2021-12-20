@@ -51,68 +51,66 @@ namespace thai_id_card_reader_console_app
 
         public static void Main(string[] args)
         {
-            Process[] processes = Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName);
-            if (processes.Length == 1)
+            AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
+
+            try
             {
-                AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
-
-                try
+                if (isAvailableCardReader())
                 {
-                    if (isAvailableCardReader())
-                    {
-                        _idcard.eventCardInserted += Idcard_eventCardInserted;
-                        _idcard.eventCardRemoved += Idcard_eventCardRemoved;
-                        _idcard.MonitorStart(_cardReaderName);
+                    _idcard.eventCardInserted += Idcard_eventCardInserted;
+                    _idcard.eventCardRemoved += Idcard_eventCardRemoved;
+                    _idcard.MonitorStart(_cardReaderName);
 
-                        //check card inserted before app start then warning user to remove card first
-                        if (isCardInserted())
+                    //check card inserted before app start then warning user to remove card first
+                    if (isCardInserted())
+                    {
+                        var resp = new ResponseModel()
                         {
-                            var resp = new ResponseModel()
-                            {
-                                cardStatus = nameof(CardStatus.FAIL),
-                                deviceStatus = nameof(DeviceStatus.AVAILABLE)
-                            };
+                            cardStatus = nameof(CardStatus.FAIL),
+                            deviceStatus = nameof(DeviceStatus.AVAILABLE)
+                        };
 
-                            SendToWeb(resp);
-                        }
-                        //else
-                        //{
-                        //    //not yet card insert then waiting user action
-                        //    waitingInsertCardTimeout();
-                        //}
-
-
-
+                        SendToWeb(resp);
                     }
-                }
-                catch (Exception ex)
-                {
-                    var resp = new ResponseModel()
-                    {
-                        cardStatus = nameof(CardStatus.FAIL),
-                        deviceStatus = nameof(DeviceStatus.ERROR),
-                        data = ex.Message
-                    };
-
-                    SendToWeb(resp);
-                }
+                    //else
+                    //{
+                    //    //not yet card insert then waiting user action
+                    //    waitingInsertCardTimeout();
+                    //}
 
 
-                //long live listening
-                while ((data = Read()) != null)
-                {
-                    var processed = ProcessMessage(data);
-                    SendMessage(data);
-                    if (processed == "exit")
-                    {
-                        return;
-                    }
+
                 }
             }
+            catch (Exception ex)
+            {
+                var resp = new ResponseModel()
+                {
+                    cardStatus = nameof(CardStatus.FAIL),
+                    deviceStatus = nameof(DeviceStatus.ERROR),
+                    data = ex.Message
+                };
+
+                SendToWeb(resp);
+            }
+
+
+            //long live listening
+            while ((data = Read()) != null)
+            {
+                var processed = ProcessMessage(data);
+                SendMessage(data);
+                if (processed == "exit")
+                {
+                    return;
+                }
+            }
+
+      
         }
 
-        //console self listening
-        private static string ProcessMessage(JObject data)
+            //console self listening
+            private static string ProcessMessage(JObject data)
         {
             var message = data["text"].Value<string>();
             switch (message)
