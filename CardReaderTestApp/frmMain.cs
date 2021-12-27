@@ -51,13 +51,18 @@ namespace thai_id_card_reader_window_app
 
         private void frmMain_Load(object sender, EventArgs e)
         {
-            string[] cardReaderList = _idcard.GetReaders();
-            foreach (var reader in cardReaderList)
+            try
             {
-                lstCardReader.Items.Add(reader);
+                string[] cardReaderList = _idcard?.GetReaders();
+                foreach (var reader in cardReaderList)
+                {
+                    lstCardReader.Items.Add(reader);
+                }
             }
-
-
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
 
         public void updateResult(string result)
