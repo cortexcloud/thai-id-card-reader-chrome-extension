@@ -1,0 +1,20 @@
+{
+    "name": "Thai ID Card Reader",
+    "description": "Listen for event from Thai id card reader application",
+    "manifest_version": 2,
+    "version": "1.0",
+    "icons": {
+        "128": "icons/logo.png"
+    },
+    "permissions": [
+        "nativeMessaging"
+    ],
+    "browser_action": {
+        "default_popup": "popup.html"
+    },
+    "background": {
+        "scripts": [
+            "background.js"
+        ]
+    }
+}
