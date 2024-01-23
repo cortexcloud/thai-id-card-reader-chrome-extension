@@ -22,6 +22,7 @@ namespace thai_id_card_reader_console_app
 
         static int _timeout = int.Parse(ConfigurationManager.AppSettings["DEFAULT_LIMIT_TIMEOUT"]);
         static string _cardReaderName = ConfigurationManager.AppSettings["DEFAULT_CARD_READER_NAME"];
+        static string logFilePath = "log.txt";
 
         static ThaiIDCard _idcard = new ThaiIDCard();
         static CardStatus _currentCardStatus = CardStatus.REMOVED;
@@ -49,27 +50,27 @@ namespace thai_id_card_reader_console_app
         }
 
 
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
 
             try
             {
-                if (isAvailableCardReader())
+                if (await IsAvailableCardReader())
                 {
                     _idcard.eventCardInserted += Idcard_eventCardInserted;
                     _idcard.eventCardRemoved += Idcard_eventCardRemoved;
                     _idcard.MonitorStart(_cardReaderName);
 
                     //check card inserted before app start then warning user to remove card first
-                    if (isCardInserted())
+                    if (await IsCardInserted())
                     {
                         var resp = new ResponseModel()
                         {
                             cardStatus = nameof(CardStatus.FAIL),
                             deviceStatus = nameof(DeviceStatus.AVAILABLE)
                         };
-
+                        await LogMessageAsync(logFilePath, "isCardInserted  true:73");
                         SendToWeb(resp);
                     }
                     //else
@@ -90,7 +91,7 @@ namespace thai_id_card_reader_console_app
                     deviceStatus = nameof(DeviceStatus.ERROR),
                     data = ex.Message
                 };
-
+                await LogMessageAsync(logFilePath, (string)resp.data);
                 SendToWeb(resp);
             }
 
@@ -106,11 +107,11 @@ namespace thai_id_card_reader_console_app
                 }
             }
 
-      
+
         }
 
-            //console self listening
-            private static string ProcessMessage(JObject data)
+        //console self listening
+        private static string ProcessMessage(JObject data)
         {
             var message = data["text"].Value<string>();
             switch (message)
@@ -164,7 +165,7 @@ namespace thai_id_card_reader_console_app
             stdout.Flush();
         }
 
-        private static void eventCardStatus(CardStatus status, Personal personal = null)
+        private static async void eventCardStatus(CardStatus status, Personal personal = null)
         {
             //update current card status
             _currentCardStatus = status;
@@ -178,7 +179,7 @@ namespace thai_id_card_reader_console_app
                 deviceStatus = deviceStatusValue.ToString(),
                 data = personal
             };
-
+            await LogMessageAsync(logFilePath, (string)resp.data);
             SendToWeb(resp);
         }
 
@@ -303,7 +304,7 @@ namespace thai_id_card_reader_console_app
             Thread.Sleep(1000);
         }
 
-        private static bool isAvailableCardReader()
+        private static async Task<Boolean> IsAvailableCardReader()
         {
             bool result = false;
 
@@ -326,11 +327,28 @@ namespace thai_id_card_reader_console_app
                     else
                     {
                         _currentDeviceStatus = DeviceStatus.INVALID;
+                        var resp = new ResponseModel()
+                        {
+                            cardStatus = nameof(CardStatus.FAIL),
+                            deviceStatus = nameof(DeviceStatus.INVALID),
+                            data = "log for INVALID status"
+                        };
+                        await LogMessageAsync(logFilePath, (string)resp.data);
+                        SendToWeb(resp);
                     }
                 }
                 else
                 {
                     _currentDeviceStatus = DeviceStatus.NOT_FOUND;
+                    var resp = new ResponseModel()
+                    {
+                        cardStatus = nameof(CardStatus.FAIL),
+                        deviceStatus = nameof(DeviceStatus.NOT_FOUND),
+                        data = "log for NOT_FOUND status"
+
+                    };
+                    await LogMessageAsync(logFilePath, (string)resp.data);
+                    SendToWeb(resp);
                 }
             }
             catch (Exception)
@@ -342,17 +360,33 @@ namespace thai_id_card_reader_console_app
             return result;
         }
 
-        private static bool isCardInserted()
+        private static async Task<Boolean> IsCardInserted()
         {
             try
             {
                 var personal = _idcard.readCitizenid();
                 if (personal != null)
                 {
+                    var resp = new ResponseModel()
+                    {
+                        cardStatus = nameof(CardStatus.INSERTED),
+                        deviceStatus = nameof(DeviceStatus.AVAILABLE),
+                        data = "isCardInserted  true"
+                    };
+                    SendToWeb(resp);
+                    await LogMessageAsync(logFilePath, (string)resp.data);
                     return true;
                 }
                 else
                 {
+                    var resp = new ResponseModel()
+                    {
+                        cardStatus = nameof(CardStatus.FAIL),
+                        deviceStatus = nameof(DeviceStatus.INVALID),
+                        data = "isCardInserted  false"
+                    };
+                    SendToWeb(resp);
+                    await LogMessageAsync(logFilePath, (string)resp.data);
                     return false;
                 }
             }
@@ -367,6 +401,8 @@ namespace thai_id_card_reader_console_app
             _idcard.MonitorStop(_cardReaderName);
             Environment.Exit(1);
         }
+
+        static async Task LogMessageAsync(string filePath, string message) { using (StreamWriter writer = new StreamWriter(filePath, true)) { await writer.WriteLineAsync($"{DateTime.Now}: {message}"); } }
 
     }
 }
