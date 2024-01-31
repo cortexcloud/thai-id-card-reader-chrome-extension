@@ -13,21 +13,19 @@ using System.Threading.Tasks;
 using System.Timers;
 using thai_id_card_reader_console_app.Models;
 using ThaiNationalIDCard;
+using System.Web.Script.Serialization;
 
 namespace thai_id_card_reader_console_app
 {
     class Program
     {
         static int _countingTimeout = 0;
-
         static int _timeout = int.Parse(ConfigurationManager.AppSettings["DEFAULT_LIMIT_TIMEOUT"]);
         static string _cardReaderName = ConfigurationManager.AppSettings["DEFAULT_CARD_READER_NAME"];
         static string logFilePath = "log.txt";
-
         static ThaiIDCard _idcard = new ThaiIDCard();
         static CardStatus _currentCardStatus = CardStatus.REMOVED;
         static DeviceStatus _currentDeviceStatus = DeviceStatus.NOT_FOUND;
-
         static JObject data;
         static Thread _thread;
 
@@ -52,6 +50,7 @@ namespace thai_id_card_reader_console_app
 
         public static async Task Main(string[] args)
         {
+            // await LogMessageAsync(logFilePath, "App started");
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
 
             try
@@ -70,17 +69,9 @@ namespace thai_id_card_reader_console_app
                             cardStatus = nameof(CardStatus.FAIL),
                             deviceStatus = nameof(DeviceStatus.AVAILABLE)
                         };
-                        await LogMessageAsync(logFilePath, "isCardInserted  true:73");
+                        // await LogMessageAsync(logFilePath, "Before send to web after is IsCardInserted");
                         SendToWeb(resp);
                     }
-                    //else
-                    //{
-                    //    //not yet card insert then waiting user action
-                    //    waitingInsertCardTimeout();
-                    //}
-
-
-
                 }
             }
             catch (Exception ex)
@@ -91,7 +82,8 @@ namespace thai_id_card_reader_console_app
                     deviceStatus = nameof(DeviceStatus.ERROR),
                     data = ex.Message
                 };
-                await LogMessageAsync(logFilePath, (string)resp.data);
+                // await LogMessageAsync(logFilePath, "Catch main");
+                // await LogMessageAsync(logFilePath, resp.data.ToString());
                 SendToWeb(resp);
             }
 
@@ -100,6 +92,11 @@ namespace thai_id_card_reader_console_app
             while ((data = Read()) != null)
             {
                 var processed = ProcessMessage(data);
+                // await LogMessageAsync(logFilePath, "Send message in while loop main");
+                // await LogMessageAsync(logFilePath, new JavaScriptSerializer().Serialize(data));
+                // await LogMessageAsync(logFilePath, processed);
+
+
                 SendMessage(data);
                 if (processed == "exit")
                 {
@@ -179,7 +176,8 @@ namespace thai_id_card_reader_console_app
                 deviceStatus = deviceStatusValue.ToString(),
                 data = personal
             };
-            await LogMessageAsync(logFilePath, (string)resp.data);
+            // await LogMessageAsync(logFilePath, "eventCardStatus()");
+            // await LogMessageAsync(logFilePath, new JavaScriptSerializer().Serialize(resp.data));
             SendToWeb(resp);
         }
 
@@ -192,7 +190,7 @@ namespace thai_id_card_reader_console_app
             _thread.Start();
         }
 
-        private static void waitingInsertCardTimeout()
+        private static async void waitingInsertCardTimeout()
         {
             while (_currentCardStatus != CardStatus.TIMEOUT)
             {
@@ -220,6 +218,7 @@ namespace thai_id_card_reader_console_app
                     if (Thread.CurrentThread.ThreadState == System.Threading.ThreadState.Running)
                     {
                         _countingTimeout = 0;
+                        // await LogMessageAsync(logFilePath, "waitingInsertCardTimeout - eventCardStatus()");
                         eventCardStatus(CardStatus.TIMEOUT);
                         _thread.Abort();
                     }
@@ -244,7 +243,7 @@ namespace thai_id_card_reader_console_app
             _thread.Start();
         }
 
-        private static void loadingTimeout()
+        private static async void loadingTimeout()
         {
             while (_currentCardStatus != CardStatus.TIMEOUT)
             {
@@ -256,6 +255,7 @@ namespace thai_id_card_reader_console_app
                 {
                     if (Thread.CurrentThread.ThreadState == System.Threading.ThreadState.Running)
                     {
+                        // await LogMessageAsync(logFilePath, "loadingTimeout - eventCardStatus()");
                         eventCardStatus(CardStatus.TIMEOUT);
                         _countingTimeout = 0;
                         _thread.Abort();
@@ -264,20 +264,23 @@ namespace thai_id_card_reader_console_app
             }
         }
 
-        #endregion
+        #endregion  
 
-        private static void Idcard_eventCardRemoved()
+        private static async void Idcard_eventCardRemoved()
         {
+            // await LogMessageAsync(logFilePath, "Idcard_eventCardRemoved - eventCardStatus()");
             eventCardStatus(CardStatus.REMOVED);
         }
 
-        private static void Idcard_eventCardInserted(Personal personal)
+        private static async void Idcard_eventCardInserted(Personal personal)
         {
+            // await LogMessageAsync(logFilePath, "Idcard_eventCardInserted - eventCardStatus() - insert");
             eventCardStatus(CardStatus.INSERTED);
 
             //interval delay
             Thread.Sleep(1000);
 
+            // await LogMessageAsync(logFilePath, "Idcard_eventCardInserted - eventCardStatus() - loading");
             eventCardStatus(CardStatus.LOADING);
 
             validateLoadingCardTimeout();
@@ -291,11 +294,13 @@ namespace thai_id_card_reader_console_app
 
                 if (_currentCardStatus != CardStatus.TIMEOUT)
                 {
+                    // await LogMessageAsync(logFilePath, "Idcard_eventCardInserted - eventCardStatus() - success");
                     eventCardStatus(CardStatus.SUCCESS, personal);
                 }
             }
             catch
             {
+                // await LogMessageAsync(logFilePath, "Idcard_eventCardInserted - eventCardStatus() - fail");
                 eventCardStatus(CardStatus.FAIL);
                 _thread.Abort();
             }
@@ -323,6 +328,14 @@ namespace thai_id_card_reader_console_app
                         _idcard.Open(_cardReaderName);
                         _currentDeviceStatus = DeviceStatus.AVAILABLE;
                         result = true;
+                        var resp = new ResponseModel()
+                        {
+                            cardStatus = nameof(CardStatus.SUCCESS),
+                            deviceStatus = nameof(DeviceStatus.AVAILABLE),
+                            message = "log for AVAILABLE status"
+                        };
+                        // await LogMessageAsync(logFilePath, resp.message);
+                        SendToWeb(resp);
                     }
                     else
                     {
@@ -331,9 +344,9 @@ namespace thai_id_card_reader_console_app
                         {
                             cardStatus = nameof(CardStatus.FAIL),
                             deviceStatus = nameof(DeviceStatus.INVALID),
-                            data = "log for INVALID status"
+                            message = "log for INVALID status"
                         };
-                        await LogMessageAsync(logFilePath, (string)resp.data);
+                        // await LogMessageAsync(logFilePath, resp.message);
                         SendToWeb(resp);
                     }
                 }
@@ -344,10 +357,10 @@ namespace thai_id_card_reader_console_app
                     {
                         cardStatus = nameof(CardStatus.FAIL),
                         deviceStatus = nameof(DeviceStatus.NOT_FOUND),
-                        data = "log for NOT_FOUND status"
+                        message = "log for NOT_FOUND status"
 
                     };
-                    await LogMessageAsync(logFilePath, (string)resp.data);
+                    // await LogMessageAsync(logFilePath, resp.message);
                     SendToWeb(resp);
                 }
             }
@@ -362,6 +375,8 @@ namespace thai_id_card_reader_console_app
 
         private static async Task<Boolean> IsCardInserted()
         {
+
+            // await LogMessageAsync(logFilePath, "IsCardInserted()");
             try
             {
                 var personal = _idcard.readCitizenid();
@@ -371,10 +386,10 @@ namespace thai_id_card_reader_console_app
                     {
                         cardStatus = nameof(CardStatus.INSERTED),
                         deviceStatus = nameof(DeviceStatus.AVAILABLE),
-                        data = "isCardInserted  true"
+                        message = "isCardInserted  true"
                     };
                     SendToWeb(resp);
-                    await LogMessageAsync(logFilePath, (string)resp.data);
+                    // await LogMessageAsync(logFilePath, resp.message);
                     return true;
                 }
                 else
@@ -383,15 +398,16 @@ namespace thai_id_card_reader_console_app
                     {
                         cardStatus = nameof(CardStatus.FAIL),
                         deviceStatus = nameof(DeviceStatus.INVALID),
-                        data = "isCardInserted  false"
+                        message = "isCardInserted  false"
                     };
                     SendToWeb(resp);
-                    await LogMessageAsync(logFilePath, (string)resp.data);
+                    // await LogMessageAsync(logFilePath, resp.message);
                     return false;
                 }
             }
             catch (Exception)
             {
+                // await LogMessageAsync(logFilePath, "Catch IsCardInserted()");
                 throw;
             }
         }
